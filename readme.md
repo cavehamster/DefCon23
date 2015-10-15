@@ -56,3 +56,9 @@
 Questions and comments can be directed towards the following forms of communication:
 - #thetransistor on freenode
 - d3c4f [at] thetransistor [dot] com
+
+
+##Updates##
+
+@hamster has added a Software directory that is the start of a set of source code to demonstrate what is possible with the badge
+

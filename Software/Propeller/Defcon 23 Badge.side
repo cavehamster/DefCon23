@@ -1,0 +1,16 @@
+Defcon 23 Badge.c
+AVR_SPI.h
+AVR_SPI.c
+ws2812.c
+ws2812.h
+ws2812_driver.spin
+LED.c
+LED.h
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>BOARD::ACTIVITYBOARD
