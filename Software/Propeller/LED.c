@@ -4,6 +4,11 @@
   http://forums.parallax.com/discussion/152504/c-code-to-work-with-ws2812-neopixel-leds since the data format 
   takes a little doing.
   
+  NOTE NOTE NOTE NOTE
+  
+  White color means all three LEDs in each package are full on.  Running all 10 LEDs as white with the LCD backlight
+  on is more than the board can handle, and you will get current folding (ie, everything flashes for a bit).  Beware.
+  
   -hamster
 
  */
@@ -17,17 +22,17 @@
 #define FALSE   0
 #endif
 
-uint32_t ledColors[LED_COUNT];
+uint32_t ledColors[10];
 
 // LED driver state
 ws2812_t LED_Driver;
 
-// pattern for chase
+// Patterns to use
 uint32_t pattern[] = {
   COLOR_RED,
   COLOR_GREEN,
   COLOR_BLUE,
-  COLOR_WHITE,
+  COLOR_BROWN,
   COLOR_YELLOW,
 };
 #define pattern_count  (sizeof(pattern) / sizeof(pattern[0]))
@@ -36,10 +41,13 @@ int *LED_cog = 0;
 int LED_Pattern = 0;
 
 // Initialize the driver and start the cog
-void LED_Init(){
+void LED_Init(int pin, int count){
   ws2812b_init(&LED_Driver);
   
-  LED_cog = cog_run(LED_Run, 128);
+  LED_Driver.pin = pin;
+  LED_Driver.ledcount = count;
+  
+  LED_cog = cog_run((void *)LED_Run, 200);
 }  
 
 // The cog.  It scans for a button press, and changes the LED pattern as needed
@@ -74,7 +82,7 @@ void LED_Chase(int count){
     
         // fill the chain with the pattern
         idx = base;                             // start at base
-        for (i = 0; i < LED_COUNT; ++i) {       // loop through connected leds
+        for (i = 0; i < LED_Driver.ledcount; ++i) {       // loop through connected leds
             ledColors[i] = pattern[idx];        // update channel color
             if (++idx >= pattern_count)              // past end of list?
                 idx = 0;                        // yes, reset
@@ -83,7 +91,7 @@ void LED_Chase(int count){
             base = 0;
     
         // update the LED chain
-        ws2812_refresh(&LED_Driver, LED_PIN, ledColors, LED_COUNT);
+        ws2812_refresh(&LED_Driver, ledColors);
             
         // Delay until next frame, checking every 5ms if there has been a state change
         for(int d = 0; d < (256 - inputs.rotary); d += 5){
@@ -102,10 +110,10 @@ void LED_AllSame(int count){
   // repeat count times or forever if count < 0
   while (count < 0 || --count >= 0) {
     for(j = 0; j < pattern_count; j++){
-      for(k = 0; k < LED_COUNT; k++){
+      for(k = 0; k < LED_Driver.ledcount; k++){
         ledColors[k] = pattern[j];
       }
-      ws2812_refresh(&LED_Driver, LED_PIN, ledColors, LED_COUNT); 
+      ws2812_refresh(&LED_Driver, ledColors); 
       
       // Delay until next frame, checking every 5ms if there has been a state change
       for(int d = 0; d < (256 - inputs.rotary); d += 5){
@@ -125,9 +133,9 @@ void LED_SingleFill(int count){
   // repeat count times or forever if count < 0
   while (count < 0 || --count >= 0) {
     for(j = 0; j < pattern_count; j++){
-      for(k = 0; k < LED_COUNT; k++){
+      for(k = 0; k < LED_Driver.ledcount; k++){
         ledColors[k] = pattern[j];
-        ws2812_refresh(&LED_Driver, LED_PIN, ledColors, LED_COUNT); 
+        ws2812_refresh(&LED_Driver, ledColors); 
       
         // Delay until next frame, checking every 5ms if there has been a state change
         for(int d = 0; d < (256 - inputs.rotary); d += 5){
@@ -154,10 +162,10 @@ int LED_CheckPattern(){
   
   static int debounceBack = FALSE, debounceForward = FALSE;
   
-  if(inputs.leftButton){ 
+  if(inputs.buttonA){ 
     debounceBack = TRUE;
   }
-  if(debounceBack && !inputs.leftButton){
+  if(debounceBack && !inputs.buttonA){
     debounceBack = FALSE;
     if(LED_Pattern > 0){
       LED_Pattern--;
@@ -165,10 +173,10 @@ int LED_CheckPattern(){
     }
   }
   
-  if(inputs.rightButton){
+  if(inputs.buttonB){
     debounceForward = TRUE;
   }
-  if(debounceForward && !inputs.rightButton){
+  if(debounceForward && !inputs.buttonB){
     debounceForward = FALSE;
     if(LED_Pattern < 2){
       LED_Pattern++;

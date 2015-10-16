@@ -9,34 +9,36 @@
  
  This is a simple bit-banging SPI interface
  
- To request data, you send the the AVR an 0x52.  It responds with 12 bytes, as such:
+ To request data, you send the the AVR a single byte 'R' (0x52).  It responds with 12 bytes, as such:
  
- D0 -  Top 4 bits are button states, low = pressed:
+ D0 -  Binary state data:
+    
+    BattStat1         bit 0     
+    BattStat2         bit 1
+    Unused (0)        bit 2
+    Unused (1)        bit 3
+    Button A (left)	  bit 4
+    Button B (right)  bit 5
+    Left joy button	  bit 6
+    Right joy button  bit 7
 
-	  Left button			bit 0
-	  Right button			bit 1
-	  Left joy button		bit 2
-	  Right joy button	bit 3
-   
-      Bottom 4 bits are likely the charging status: bit 0 is 'charged' and bit 1 is 'charging'.  Just guessing.  Unsure
-      if bits 2 and 3 report anything.
+ D1 - 0-255, status of the rotary encoder dial, 4 counts per click
 
- D1 - 0-255, status of the rotary encoder dial
+ D2 - D5 -  Location of the left stick.  Centered is about 512
+ 
+    Left Stick X Axis D2-D3 10 bits (Seems to be the same as the Y axis)
+    Left Stick Y Axis D4-D5 10 bits
 
- D2 - D5 -  Location of the left stick, left-right.  
-            D2-D3 and D4-D5 seem to be the same.  It's a 10 bit value, 0 to 1023.
-			     Zero is all the way left, 512 is the center, and 1023 is full right.
+ D6 - D9 -  Location of the right stick.  Centered is about 512
+ 
+    Right Stick X Axis D2-D3 10 bits
+    Right Stick Y Axis D4-D5 10 bits  (Seems to be a random value instead of a position)
 
- D6 - D7 -	Location of the right stick up-down.  10 bit value
-			     All up is zero, center is 512, and down is 1023
-
- D8 - D9	-	Always 03 FF
-
- D10 - D11 - Reading something, toggling around 03 64
+ D10 - D11 - Battery voltage, 10 bits
  
  NOTE that the joysticks are very sensitive near the center and don't change much at full extension!
  
- Also note that the up-down of the left stick and the left-right of the right stick are not being sent I guess.
+ To set the backlight, you send the AVR a single byte 'W' (0x57) and a second byte with the backlight level 0-255
  
  -hamster
  
@@ -61,6 +63,7 @@ typedef struct{
 
 PinStruct pins;
 volatile Inputs inputs;
+volatile uint8_t LCD_Backlight;
 int *avrISP_cog = 0;
 
 // Initialize and start the cog
@@ -72,7 +75,7 @@ int avrSPI_Init(uint8_t CS, uint8_t CLK, uint8_t MISO, uint8_t MOSI){
   
   inputs.rotary = 0;
   
-  avrISP_cog = cog_run(avrISP_Run, 128);
+  avrISP_cog = cog_run((void *)avrISP_Run, 128);
 }    
 
 // Stop the cog
@@ -93,12 +96,12 @@ void avrISP_Run(){
   while(1){
     low(pins.CS);  // Assert the CS
     
-    // Ask the AVR for data
-    // These first two is what the original code was asking for, but I'm not sure what it does.
-    // Just need the third one to get the data
-    //shift_out(MOSI, CLK, MSBFIRST, 8, 0b01010111);
-    //shift_out(MOSI, CLK, MSBFIRST, 8, 0b00000000);
-    shift_out(pins.MOSI, pins.CLK, MSBFIRST, 8, 0x52);
+    // Set the LCD backlight level
+    shift_out(pins.MOSI, pins.CLK, MSBFIRST, 8, 0x57);  // 'W'
+    shift_out(pins.MOSI, pins.CLK, MSBFIRST, 8, LCD_Backlight);
+    
+    // Ask the AVR for data 
+    shift_out(pins.MOSI, pins.CLK, MSBFIRST, 8, 0x52);  // 'R'
     
     // Save the returned data into an array
     for(int i = 0; i < 12; i++){
@@ -109,18 +112,22 @@ void avrISP_Run(){
     
     // Get the data and stick it into the data struct
     // Buttons are 'corrected' so a high means the button is down
-    inputs.leftButton = !((value[0] >> 4) & 0x01);
-    inputs.rightButton = !((value[0] >> 5) & 0x01);
-    inputs.leftJoystickButton = !((value[0] >> 6) & 0x01);
-    inputs.rightJoystickButton = !((value[0] >> 7) & 0x01);
+    inputs.buttonA = !((value[0] >> 4) & 0x01);
+    inputs.buttonB = !((value[0] >> 5) & 0x01);
+    inputs.leftStick.button = !((value[0] >> 6) & 0x01);
+    inputs.rightStick.button = !((value[0] >> 7) & 0x01);
     
-    inputs.charged = !((value[0] >> 1) & 0x01);
-    inputs.charging = !(value[0] & 0x01);
+    inputs.battStat2 = !((value[0] >> 1) & 0x01);
+    inputs.battStat1 = !(value[0] & 0x01);
+    inputs.battVolts = (value[10] << 8) | value[11];
     
     inputs.rotary = value[1];
-    inputs.LRStick = (value[2] << 8) | value[3];
-    inputs.UDStick = (value[6] << 8) | value[7];
-    inputs.chargeLevel = (value[10] << 8) | value[11];
+    
+    inputs.leftStick.X = (value[2] << 8) | value[3];
+    inputs.leftStick.Y = (value[4] << 8) | value[5];
+    inputs.rightStick.X = (value[6] << 8) | value[7];
+    inputs.rightStick.Y = (value[8] << 8) | value[9];
+    
 
     // Pause for a bit
     pause(20);

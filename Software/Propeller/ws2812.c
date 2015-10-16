@@ -65,11 +65,11 @@ void ws2812_close(ws2812_t *state)
     }
 }
 
-void ws2812_refresh(ws2812_t *state, int pin, uint32_t *colors, int count)
+void ws2812_refresh(ws2812_t *state, uint32_t *colors)
 {
     uint32_t cmd;
-    cmd =  pin
-        | ((count - 1) << 8)
+    cmd =  state->pin
+        | ((state->ledcount - 1) << 8)
         | ((uint32_t)colors << 16);
     while (state->command)
         ;

@@ -40,6 +40,8 @@ extern "C" {
 typedef struct {
     volatile uint32_t command;
     int cog;
+    int pin;
+    int ledcount;
 } ws2812_t;
 
 // load a COG with a driver for WS2812 chips
@@ -61,7 +63,7 @@ int ws_init(ws2812_t *state, int usreset, int ns0h, int ns0l, int ns1h, int ns1l
 void ws2812_close(ws2812_t *statet);
 
 // refresh a chain of LEDs
-void ws2812_refresh(ws2812_t *state, int pin, uint32_t *colors, int count);
+void ws2812_refresh(ws2812_t *state, uint32_t *colors);
 
 // create color from a 0 to 255 position input
 // -- colors transition r-g-b back to r

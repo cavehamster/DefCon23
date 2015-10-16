@@ -22,13 +22,18 @@
 #define AVR_SPI_MISO  17  // Master in, Slave out
 #define AVR_SPI_MOSI  18  // Master out, Slave in
 
+// LED drive pin and count
+#define LED_PIN     26
+#define LED_COUNT   10
+
 int main(){
-  
-  Inputs oldInputs;
+    
+  // Set the LCD backlight to the middle level
+  LCD_Backlight = 64;
   
   // Initialize the cogs
   avrSPI_Init(AVR_SPI_CS, AVR_SPI_CLK, AVR_SPI_MISO, AVR_SPI_MOSI);
-  LED_Init();
+  LED_Init(LED_PIN, LED_COUNT);
  
   // Give things a tick to get the vars primed
   pause(100);
@@ -39,10 +44,10 @@ int main(){
     // This takes a while, so it might not update as quickly as you can smack the keys
     // You'll probably want to comment this out at some point.
     print("%c", HOME);
-    print("Buttons - l:%d r:%d lj:%d rj:%d\n",  inputs.leftButton, inputs.rightButton,
-              inputs.leftJoystickButton, inputs.rightJoystickButton); 
-    print("Charging? %d Charged? %d Level 0x%x\n", inputs.charging, inputs.charged, inputs.chargeLevel);
-    print("Rotary 0x%x UDJoy %x LRJoy %x\n",  inputs.rotary, inputs.UDStick, inputs.LRStick);
+    print("ButtonA:%d ButtonB:%d Rotary:%d\n",  inputs.buttonA, inputs.buttonB, inputs.rotary); 
+    print("BattStat1:%d BattStat2:%d Volts %d\n", inputs.battStat1, inputs.battStat2, inputs.battVolts);
+    print("LeftStick X:%d Y:%d B:%d\n", inputs.leftStick.X, inputs.leftStick.Y, inputs.leftStick.button);
+    print("RightStick X:%d Y:%d B:%d\n", inputs.rightStick.X, inputs.rightStick.Y, inputs.rightStick.button);
     print("LED Pattern %d", LED_Pattern);
     print("%c", CLREOL);
     
