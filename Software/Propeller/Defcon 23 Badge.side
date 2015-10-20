@@ -6,6 +6,8 @@ ws2812.h
 ws2812_driver.spin
 LED.c
 LED.h
+LCD.c
+LCD.h
 >compiler=C
 >memtype=cmm main ram compact
 >optimize=-Os

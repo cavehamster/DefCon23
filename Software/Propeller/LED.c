@@ -37,6 +37,8 @@ uint32_t pattern[] = {
 };
 #define pattern_count  (sizeof(pattern) / sizeof(pattern[0]))
 
+#define NUM_OF_MODES 4
+
 int *LED_cog = 0;
 int LED_Pattern = 0;
 
@@ -47,7 +49,7 @@ void LED_Init(int pin, int count){
   LED_Driver.pin = pin;
   LED_Driver.ledcount = count;
   
-  LED_cog = cog_run((void *)LED_Run, 200);
+  LED_cog = cog_run((void *)LED_Run, 128);
 }  
 
 // The cog.  It scans for a button press, and changes the LED pattern as needed
@@ -57,19 +59,32 @@ void LED_Run(){
     
     LED_CheckPattern();
     switch(LED_Pattern){
-      case 0:              
+      case 0:
+        LED_Off();
+        pause(10);
+        break;
+      case 1:              
         LED_AllSame(1);
         break;
-      case 1:
+      case 2:
         LED_Chase(1);
         break;
-      case 2:
+      case 3:
         LED_SingleFill(1);
         break;
     }        
   }    
 }  
 
+void LED_Off(){
+  int i;
+  
+  for(i = 0; i < LED_Driver.ledcount; i++){
+    ledColors[i] = COLOR_BLACK;
+  }
+  ws2812_refresh(&LED_Driver, ledColors); 
+
+}
 
 // Colors chase around the badge
 // Borrowed from http://forums.parallax.com/discussion/152504/c-code-to-work-with-ws2812-neopixel-leds
@@ -178,7 +193,7 @@ int LED_CheckPattern(){
   }
   if(debounceForward && !inputs.buttonB){
     debounceForward = FALSE;
-    if(LED_Pattern < 2){
+    if(LED_Pattern < NUM_OF_MODES - 1){
       LED_Pattern++;
       return TRUE;
     }

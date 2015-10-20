@@ -24,20 +24,23 @@
 
 // LED drive pin and count
 #define LED_PIN     26
-#define LED_COUNT   10
+#define LED_COUNT   10         
 
 int main(){
     
+  uint8_t byte = 0;
+  
   // Set the LCD backlight to the middle level
   LCD_Backlight = 64;
   
   // Initialize the cogs
   avrSPI_Init(AVR_SPI_CS, AVR_SPI_CLK, AVR_SPI_MISO, AVR_SPI_MOSI);
   LED_Init(LED_PIN, LED_COUNT);
+  LCD_Start();
  
   // Give things a tick to get the vars primed
   pause(100);
- 
+  
   while(1){
     
     // Print the data out to the terminal

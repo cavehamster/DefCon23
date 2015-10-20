@@ -10,6 +10,7 @@ void LED_SingleFill(int count);
 void LED_Init(int pin, int count);
 void LED_Run(void);
 int LED_CheckPattern(void);
+void LED_Off(void);
 
 extern int LED_Pattern;
 
