@@ -7,7 +7,7 @@
   
   The AVR handles analog inputs: Joystick positions, button presses, encoder rotations, and the battery status.
   
-  The Propeller handles the inputs from the wifi, xbee, display and NeoPixel LEDS.
+  The Propeller handles the inputs from the wifi, xbee, display, SD card and NeoPixel LEDS.
   
   Enjoy!
   -hamster
@@ -16,15 +16,7 @@
 #include "simpletools.h"
 #include "AVR_SPI.h"
 #include "LED.h"
-
-#define AVR_SPI_CS    19  // Chip Select
-#define AVR_SPI_CLK   16  // Data Clock
-#define AVR_SPI_MISO  17  // Master in, Slave out
-#define AVR_SPI_MOSI  18  // Master out, Slave in
-
-// LED drive pin and count
-#define LED_PIN     26
-#define LED_COUNT   10         
+#include "LCD.h"       
 
 int main(){
     
@@ -46,13 +38,14 @@ int main(){
     // Print the data out to the terminal
     // This takes a while, so it might not update as quickly as you can smack the keys
     // You'll probably want to comment this out at some point.
+    
     print("%c", HOME);
     print("ButtonA:%d ButtonB:%d Rotary:%d\n",  inputs.buttonA, inputs.buttonB, inputs.rotary); 
     print("BattStat1:%d BattStat2:%d Volts %d\n", inputs.battStat1, inputs.battStat2, inputs.battVolts);
     print("LeftStick X:%d Y:%d B:%d\n", inputs.leftStick.X, inputs.leftStick.Y, inputs.leftStick.button);
     print("RightStick X:%d Y:%d B:%d\n", inputs.rightStick.X, inputs.rightStick.Y, inputs.rightStick.button);
     print("LED Pattern %d", LED_Pattern);
-    print("%c", CLREOL);
+    print("%c", CLREOL);    
     
     pause(500);
     

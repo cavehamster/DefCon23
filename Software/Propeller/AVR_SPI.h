@@ -3,6 +3,11 @@
  *
  */
 
+#define AVR_SPI_CS    19  // Chip Select
+#define AVR_SPI_CLK   16  // Data Clock
+#define AVR_SPI_MISO  17  // Master in, Slave out
+#define AVR_SPI_MOSI  18  // Master out, Slave in
+
 typedef struct{
   uint16_t  X : 10;
   uint16_t  Y : 10;

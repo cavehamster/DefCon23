@@ -8,6 +8,8 @@ LED.c
 LED.h
 LCD.c
 LCD.h
+sdcard.c
+sdcard.h
 >compiler=C
 >memtype=cmm main ram compact
 >optimize=-Os

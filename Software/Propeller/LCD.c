@@ -29,16 +29,19 @@
 
 #include "simpletools.h"
 #include "LCD.h"
+#include "sdcard.h"
 
 int *LCD_cog = 0;
 
 void LCD_Start(void){
-  LCD_cog = cog_run((void *)LCD_Run, 128);
+  LCD_cog = cog_run((void *)LCD_Run, 512);
 }                      
 
 /**
  *  Initialize the LCD interface.  The LCD uses negative logic, so we need
  *  to set various pins high.
+ *  
+ *  TODO document the config options better and optimize
  */
 void LCD_Init(void){
 
@@ -61,6 +64,8 @@ void LCD_Init(void){
   set_output(LCD_RS, 1);
   set_output(LCD_WR, 1);
   set_output(LCD_RD, 1);
+  
+  set_directions(7, 0, 0xFF);
     
   LCD_SyncTransfer();
   
@@ -100,13 +105,20 @@ void LCD_Init(void){
   LCD_Write(LCD_POWER_CONTROL_3,          0xC1B0);      //VRH,VCMR,PSON,PON
   pause(50); 
   
-  LCD_Write(LCD_DRIVER_OUTPUT_CONTROL,    0x0100);
-  LCD_Write(LCD_LCD_DRIVE_WAVE_CONTROL,   0x0100);
-  LCD_Write(LCD_ENTRY_MODE,               0x1030);       //1030
-  LCD_Write(LCD_DISPLAY_CONTROL_3,        0x0001);
-  LCD_Write(LCD_EXT_DISPLAY_IF_CONTROL_1, 0x0000);
+//  LCD_Write(LCD_DRIVER_OUTPUT_CONTROL,    0x0100);
+  LCD_Write(LCD_LCD_DRIVE_WAVE_CONTROL,   0x0100);       // B[8]    Line inversion
+  LCD_Write(LCD_ENTRY_MODE,               0x5030);       // B[3]    Address counter goes horizontal
+                                                         // B[5:4]  Horizontal decrement, vertical increment
+                                                         // B[7]    Orgin not moved
+                                                         // B[12]   Write data in BGR mode
+                                                         // B[14]   16bpp
+                                                         // B[15]   Two transfers per 16 bits 
+//  LCD_Write(LCD_EXT_DISPLAY_IF_CONTROL_1, 0x0001);       // B[0]    16 bit color
+                                                         // B[5:4]  Internal clock
+                                                         // B[8]    RAM can be accessed while doing display
+                                                         // B[14:12]RAM write cycle is 1 frame
   LCD_Write(LCD_FRAME_MARKER_CONTROL,     0x8000);
-  LCD_Write(LCD_EXT_DISPLAY_IF_CONTROL_2, 0x0000);
+//  LCD_Write(LCD_EXT_DISPLAY_IF_CONTROL_2, 0x0000);        
 
   LCD_Write(LCD_WIN_H_RAM_ADRR_START,     0x0000);
   LCD_Write(LCD_WIN_H_RAM_ADRR_END,       0x00EF);
@@ -135,15 +147,72 @@ void LCD_Init(void){
  */
 void LCD_Run(void){
   
+  FILE *fp;
+  uint8_t buffer[500];
+  uint16_t x, y, i, j;
+  int dataOffset;
+  int size;
+  int counter = 0;
+  
   LCD_Init();
   
+  // Initialize the interface to the SD card
+  sd_mount(SD_DO, SD_SCK, SD_DI, SD_SS);
+  
   while(1){
-    paint(0xF800);
-    pause(100);
-    paint(0x07E0);
-    pause(100);
-    paint(0x001F);
-    pause(100);
+//    paint(0xF800);
+//    pause(100);
+//    paint(0x07E0);
+//    pause(100);
+//    paint(0x001F);
+//    pause(100);
+    
+    // Open the first image
+    if(counter == 0){
+      fp = fopen("1.bmp", "r");
+      counter++;
+    }
+    else{
+    fp = fopen("2.bmp", "r");
+    counter = 0;
+    }            
+   
+    // Read in the header
+    fread(buffer, 1, 54, fp);
+    // Get the size of the image
+    // 16 bit numbers, do some bit shifting
+    x = buffer[18] + (buffer[19] << 8);
+    y = buffer[22] + (buffer[23] << 8);
+    //size = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16) | (buffer[5] << 24);
+    dataOffset = buffer[10] | (buffer[11] << 8) | (buffer[12] << 16) | (buffer[13] << 24);
+   
+    // Seek the file pointer to the start of the pixel data
+    fseek(fp, dataOffset, SEEK_SET);
+   
+   
+    LCD_SetWindow(0,0,239,400);
+
+    for(i = 0; i < y; i++){
+    
+      // Read a line in
+      fread(buffer, 1, x * 2, fp);
+     
+      for(j = 0; j < x * 2; j += 2){
+        // Write the pixel data out to the display
+        // Note that the pixel data is the Red, Green, Blue data in the 565 format, ie:
+        //
+        // Bit 0  1  2  3  4  5  6  7    8  9  10 11 12 13 14 15
+        // Use B1 B2 B3 B4 B5 G0 G1 G2   G3 G4 G5 R1 R2 R3 R4 R5
+        //
+        // Notice that we only have 5 bits of Blue and Red?  The human eye is more sensitive
+        // to the color green, so to make the RGB fit into 16 bits it is given priority
+        LCD_Write_Data((buffer[j]) + (buffer[j+1] << 8));
+      }
+    }
+      
+    // Close and prepare for the next file
+    fclose(fp);              
+        
   }
 }  
 
@@ -185,7 +254,7 @@ void LCD_Out(uint8_t byte){
   // Since we know what the hardware looks like, and the physical byte is rotated
   // 2 bits, we'll try to do this a little faster.
   // Set the pins to be output
-  set_directions(7, 0, 0xFF);
+  //set_directions(7, 0, 0xFF);
   
   // Rotate the byte
   byte = (byte >> 2) | (byte << (8 - 2));
