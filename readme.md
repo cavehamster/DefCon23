@@ -2,7 +2,7 @@
 [DC801](https://dc801.org/) and [theTransistor](http://thetransistor.com/) bring you yet another fun party badge.
 
 
-![Defcon VIP Party Badge 2015](/images/design.jpg)
+![Defcon VIP Party Badge 2015](/images/badge-801-logo.jpg)
 
 ##Features
 - [Parallax Propeller mCU](https://www.parallax.com/product/p8x32a-d40)

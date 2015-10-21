@@ -22,4 +22,4 @@ To display images on your badge, you need to create your images in a specific bi
 
 Want to display more?  Take a look in LCD.c and modify the cog code there to handle more files.
 
-![Defcon VIP Party Badge 2015](/images/badge-801-logo.jpg)
+![Defcon VIP Party Badge 2015](/../../images/badge-801-logo.jpg)
