@@ -12,7 +12,7 @@ sdcard.c
 sdcard.h
 >compiler=C
 >memtype=cmm main ram compact
->optimize=-Os
+>optimize=-O2
 >-m32bit-doubles
 >-fno-exceptions
 >defs::-std=c99

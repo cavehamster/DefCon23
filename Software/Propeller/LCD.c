@@ -254,14 +254,15 @@ void LCD_Out(uint8_t byte){
   // Since we know what the hardware looks like, and the physical byte is rotated
   // 2 bits, we'll try to do this a little faster.
   // Set the pins to be output
-  //set_directions(7, 0, 0xFF);
+  
+//  DIRA |= 0xFF;
   
   // Rotate the byte
   byte = (byte >> 2) | (byte << (8 - 2));
   
   // Set the byte
-  set_outputs(7, 0, byte);
-  
+  OUTA = (OUTA & ~0xFF) | byte;
+
   // A slower, but more flexible solution
   
 /*  
@@ -334,18 +335,17 @@ uint8_t LCD_In(){
  */
 void LCD_Write_Command(uint16_t command){
   // Set command mode
-  // Enable the display
-  set_output(LCD_RS, 0);
-  set_output(LCD_CS, 0);
+  // Enable the display 
+  OUTA &= ~((1 << LCD_RS) | (1 << LCD_CS));  
   // Set the data, high byte first
   LCD_Out(command >> 8); 
-  set_output(LCD_WR, 0);
-  set_output(LCD_WR, 1);
+  OUTA ^= 1 << LCD_WR;
+  OUTA ^= 1 << LCD_WR;
   LCD_Out(command);
-  set_output(LCD_WR, 0);
-  set_output(LCD_WR, 1);
+  OUTA ^= 1 << LCD_WR;
+  OUTA ^= 1 << LCD_WR;
   // Disable the LCD
-  set_output(LCD_CS, 1);
+  OUTA |= (1 << LCD_CS);
 }   
 
 /**
@@ -354,16 +354,17 @@ void LCD_Write_Command(uint16_t command){
 void LCD_Write_Data(uint16_t data){
   // Set data mode
   // Enable the display
-  set_output(LCD_RS, 1);
-  set_output(LCD_CS, 0);
+  OUTA |= 1 << LCD_RS;
+  OUTA &= ~(1 << LCD_CS);
   // Set the data, high byte first
   LCD_Out(data >> 8); 
-  set_output(LCD_WR, 0);
-  set_output(LCD_WR, 1);
+  OUTA ^= 1 << LCD_WR;
+  OUTA ^= 1 << LCD_WR;
   LCD_Out(data);
-  set_output(LCD_WR, 0);
-  set_output(LCD_WR, 1);
-  // Disable the LCD/  set_output(LCD_CS, 1);
+  OUTA ^= 1 << LCD_WR;
+  OUTA ^= 1 << LCD_WR;
+  // Disable the LCD
+  OUTA |= (1 << LCD_CS);
 } 
 
 /**
